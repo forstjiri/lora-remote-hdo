@@ -1,0 +1,18 @@
+**WIP**
+Remote HDO (relay) toggle, will include wiring in Fritzing, 3D model for case and arduino code for transmitter (tx) and receiver (rx).
+
+**Needed hardware:**
+- Ai-Thinker RA-02 SX1278 433MHz (or some other LoRa module)
+- Arduino running on 3v3 (some d1 mini, esp 32 dev board, pro micro)
+- Relay module
+- 433Mhz antena and pigtal to SMA Female cable reduction
+
+**Optional hw:**
+- NeoPixel WS2812 RGB led to indicate two-way communication
+
+
+Compile, upload and monitor with Platformio using make:
+```bash
+make tx
+make rx
+```

@@ -1,0 +1,5 @@
+#define LORA_CHANNEL 433E6
+#define END_DELIMITER '\n'
+#define MESSAGE_ON "ON"
+#define MESSAGE_OFF "OFF"
+#define MESSAGE_ACK "ACK"
