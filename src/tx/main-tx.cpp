@@ -1,9 +1,10 @@
 #include <SPI.h>
 #include <LoRa.h>
+#include <ESP8266WiFi.h> // IF 8266
 #include <Adafruit_NeoPixel.h>
 #include <constants.h>
 
-#define HDO_GPIO 34
+#define HDO_GPIO D2 // Pull-up GPIO pin for HDO state
 
 bool waitForAcknowledgment(int timeou);
 uint32_t getColorRed();
@@ -12,7 +13,7 @@ uint32_t getColorBlue();
 void setPixelColor(uint32_t color);
 void ledBlink(int forPeriod, uint32_t color);
 
-Adafruit_NeoPixel pixels(1, 27, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(1, D3, NEO_RGB + NEO_KHZ800);
 
 /**
  * Send HDO GPIO state over LoRa
@@ -23,16 +24,20 @@ Adafruit_NeoPixel pixels(1, 27, NEO_RGB + NEO_KHZ800);
  * - Green blinking: ACK received || Red blinking: no ACK received
  */
 void setup() {
+  WiFi.mode(WIFI_OFF); // IF 8266
+  WiFi.forceSleepBegin(); // IF 8266
+  delay(1);
+
   pixels.begin();
   pixels.clear();
   pixels.setBrightness(50);
-  pinMode(HDO_GPIO, INPUT);
+  pinMode(HDO_GPIO, INPUT_PULLUP); // Set HDO GPIO as input with pull-up resistor
   Serial.begin(9600);
   Serial.println("LoRa transmitter, starting...");
   while (!Serial) {
     ledBlink(1000, getColorBlue());
   }
-  LoRa.setPins(33, 32, 35); // NSS, RST, DIO0
+  LoRa.setPins(D8, D0, D1); // NSS, RST, DIO0
   if (!LoRa.begin(LORA_CHANNEL)) {
     Serial.println("Starting LoRa failed!");
     while (1);
@@ -40,7 +45,7 @@ void setup() {
 }
 
 void loop() {
-  String state = digitalRead(HDO_GPIO) ? MESSAGE_ON : MESSAGE_OFF;
+  String state = digitalRead(HDO_GPIO) ? MESSAGE_OFF : MESSAGE_ON;
   setPixelColor(state == MESSAGE_ON ? getColorGreen() : getColorRed());
   delay(1000);
   Serial.printf("Sending HDO GPIO state: %s\n", state.c_str());
