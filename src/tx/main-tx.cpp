@@ -6,7 +6,7 @@
 
 #define HDO_GPIO D2 // Pull-up GPIO pin for HDO state
 
-bool waitForAcknowledgment(int timeou);
+bool waitForAcknowledgment(int timeout);
 uint32_t getColorRed();
 uint32_t getColorGreen();
 uint32_t getColorBlue();
@@ -17,7 +17,7 @@ Adafruit_NeoPixel pixels(1, D3, NEO_RGB + NEO_KHZ800);
 
 /**
  * Send HDO GPIO state over LoRa
- * 
+ *
  * Led indication debug:
  * - Red still: HDO is OFF || Green still: HDO is ON
  * - Blue blinking: waiting for ACK
