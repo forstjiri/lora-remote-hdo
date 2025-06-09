@@ -3,6 +3,9 @@
 #include <ESP8266WiFi.h>
 #include <Adafruit_NeoPixel.h>
 #include <constants.h>
+#include "Arduino.h"
+
+#define RELAY_PIN D2
 
 String lastMessage = "";
 bool hasNewMessage = false;
@@ -14,6 +17,8 @@ Adafruit_NeoPixel pixels(1, D3, NEO_RGB + NEO_KHZ800);
 void onReceive(int packetSize);
 void sendAcknowledgement();
 void notifyWhenNoTx();
+void triggerOn();
+void triggerOff();
 
 uint32_t getColorRed() { return pixels.Color(255, 0, 0); }
 uint32_t getColorGreen() { return pixels.Color(0, 255, 0); }
@@ -22,6 +27,15 @@ void setPixelColor(uint32_t color) {
   pixels.show();
 }
 
+/**
+ * Main LED indication:
+ * - Red: HDO OFF state received or no TX for 50 seconds
+ * - Green: HDO ON state received in last 50 seconds
+ * 
+ * Onboard LED indication:
+ * - Blink: received HDO state
+ * - Still: no new HDO state received
+ *  */
 void setup() {
   WiFi.mode(WIFI_OFF);
   WiFi.forceSleepBegin();
@@ -32,11 +46,10 @@ void setup() {
   pixels.setBrightness(50);
 
   Serial.begin(9600);
-  while (!Serial);
+  delay(100);
   Serial.println("LoRa Receiver");
 
-  pinMode(LED_BUILTIN, OUTPUT);
-  LoRa.setPins(D8, D0, D1);
+  LoRa.setPins(D8, D0, D1); // NSS, RST, DIO0
   if (!LoRa.begin(LORA_CHANNEL)) {
     Serial.println("Starting LoRa failed!");
     while (1);
@@ -44,6 +57,9 @@ void setup() {
 
   LoRa.onReceive(onReceive);
   LoRa.receive();
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+  triggerOff();
 }
 
 void loop() {
@@ -56,11 +72,9 @@ void loop() {
 
     Serial.print("Received HDO GPIO state: '");
     if (hdoState == MESSAGE_ON) {
-      Serial.print("ON");
-      setPixelColor(getColorGreen());
+      triggerOn();
     } else if (hdoState == MESSAGE_OFF) {
-      Serial.print("OFF");
-      setPixelColor(getColorRed());
+      triggerOff();
     } else {
       Serial.printf("Unknown state: '%s'\n", hdoState.c_str());
     }
@@ -73,7 +87,8 @@ void loop() {
   notifyWhenNoTx();
 }
 
-void onReceive(int packetSize) {
+void onReceive(int packetSize)
+{
   if (packetSize == 0) return;
 
   // Přečti ručně jednotlivé bajty – bezpečné
@@ -104,7 +119,24 @@ void sendAcknowledgement() {
 void notifyWhenNoTx() {
   if ((unsigned long)(millis() - lastReceiveTime) > 50000UL) {
     Serial.println("No TX");
-    setPixelColor(getColorRed());
-    digitalWrite(LED_BUILTIN, HIGH);
+    if (digitalRead(RELAY_PIN) == HIGH) {
+      triggerOff();
+    }
   }
+}
+
+
+void triggerOn()
+{
+  Serial.print("ON");
+  digitalWrite(RELAY_PIN, HIGH);
+  setPixelColor(getColorGreen());
+}
+
+
+void triggerOff()
+{
+  Serial.print("OFF");
+  digitalWrite(RELAY_PIN, LOW);
+  setPixelColor(getColorRed());
 }
